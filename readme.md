@@ -18,8 +18,9 @@ app_secret=<facebook_app_secret>
 ```
 
 To run, simply type:
-
-`npm run dev`
+```
+npm run dev
+```
 
 In order for facebook messenger to connect to your localhost during development, your webhook needs to be exposed, i.e. a public domain needs to redirect to your localhost server.
 

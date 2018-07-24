@@ -1,6 +1,8 @@
 var debug = require('debug')('botkit:incoming_webhooks');
 var request = require('request');
 
+const DIAGNOSIS_API = 'http://ai-stage.finddoc.com:8080';
+
 module.exports = function(webserver, controller) {
 
     const pausedUsers = {};
@@ -79,36 +81,31 @@ module.exports = function(webserver, controller) {
           return res.send(replyData("symptom-input-end", "symptom_end"));
         case 'symptom.end':
 
+          // Iterate through array of symptoms and append to url string
+          urlString = `${DIAGNOSIS_API}/diagnosis?`
+
+          symptomParams = symptoms.map(symptom => `symptom_list=${symptom}`).join('&')
+
+          urlString += symptomParams
+
           request({
-            url: "http://ai-stage.finddoc.com:8080/auth",
-            method: "POST",
-            json: true,
-            body: {
-              username: "joseph",
-              password: "asdf"
-            }
+            url: urlString,
+            method: "GET",
           }, (error, response, body) => {
-            request({
-              url: "http://ai-stage.finddoc.com:8080/diseases/first-round",
-              method: "POST",
-              json: true,
-              headers: {
-                Authorization: `JWT ${body.access_token}`
-              },
-              body: {
-                symptom_list: symptoms
-              }
-            }, (error, response, body) => {
-              console.log(JSON.parse(body.diagnosis));
-              let diagnosisText = '';
-              JSON.parse(body.diagnosis).forEach(result => {
-                 diagnosisText = diagnosisText.concat(`${result.diagnose}\t${result.prob}\n\n`);
-              });
-              return res.send(replyData(null, null, diagnosisText));
+            console.log(JSON.parse(JSON.parse(body).diagnosis));
+
+            diagnosisList = JSON.parse(JSON.parse(body).diagnosis);
+
+            let diagnosisText = `We've reached the end. Judging from your symptoms, your most probably diagnosis is:\n\n`;
+
+            diagnosisList.forEach(result => {
+              diagnosisText += `${result.diagnosis}, common level: ${result.common}, prob: ${result.prob}\n\n`
             })
+
+            return res.send(replyData(null, null, diagnosisText))
           });
         }
-      res.status(200);
+
     });
 
     // Helper function to respond with correct context and followup events
